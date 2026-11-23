@@ -3,15 +3,15 @@ name: dang-youtube
 on:
   # GIAI ĐOẠN 1 (thử): chỉ chạy tay bằng nút "Run workflow".
   # GIAI ĐOẠN 2: bỏ dấu # ở 2 dòng dưới để chạy mỗi giờ (nhớ đặt TOLERANCE_PHUT = 25 trong tab HE_THONG).
-  # schedule:
-  #   - cron: "0 * * * *"
+  schedule:
+     - cron: "0 * * * *"
   workflow_dispatch:
     inputs:
       mode:
         description: "doctor = kiểm tra cấu hình | dry-run = xem sẽ đăng gì (không đăng) | run = đăng thật"
         type: choice
         options: [doctor, dry-run, run]
-        default: doctor
+        default: run
       pipelines:
         description: "ID đường ống cần chạy, vd A_NGAN (trống = tất cả đường ống Active)"
         type: string
@@ -19,7 +19,7 @@ on:
       force:
         description: "Bỏ qua lọc giờ Gio_dang (bật khi chạy thử)"
         type: boolean
-        default: true
+        default: false
       max_videos:
         description: "Số video tối đa mỗi đường ống"
         type: string
@@ -28,7 +28,7 @@ on:
         description: "Ép chế độ riêng tư (bỏ qua cột Privacy). Chạy thử nên để private"
         type: choice
         options: [private, unlisted, public, theo-CONFIG]
-        default: private
+        default: theo-CONFIG
 
 # Không cho 2 lần chạy đè nhau (tránh đăng trùng video)
 concurrency:
