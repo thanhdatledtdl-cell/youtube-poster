@@ -1,10 +1,7 @@
 name: dang-youtube
 
 on:
-  # Chạy tự động mỗi 30 phút (giờ UTC, không ảnh hưởng vì chương trình tự lọc theo giờ VN trong cột Gio_dang của tab CONFIG)
-  schedule:
-    - cron: "15,45 * * * *"
-  # Chạy tay bằng nút "Run workflow"
+  # Chạy tay bằng nút "Run workflow" hoặc do Apps Script gọi
   workflow_dispatch:
     inputs:
       mode:
