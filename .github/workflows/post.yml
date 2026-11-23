@@ -1,0 +1,81 @@
+name: dang-youtube
+
+on:
+  # GIAI ĐOẠN 1 (thử): chỉ chạy tay bằng nút "Run workflow".
+  # GIAI ĐOẠN 2: bỏ dấu # ở 2 dòng dưới để chạy mỗi giờ (nhớ đặt TOLERANCE_PHUT = 25 trong tab HE_THONG).
+  # schedule:
+  #   - cron: "0 * * * *"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "doctor = kiểm tra cấu hình | dry-run = xem sẽ đăng gì (không đăng) | run = đăng thật"
+        type: choice
+        options: [doctor, dry-run, run]
+        default: doctor
+      pipelines:
+        description: "ID đường ống cần chạy, vd A_NGAN (trống = tất cả đường ống Active)"
+        type: string
+        default: ""
+      force:
+        description: "Bỏ qua lọc giờ Gio_dang (bật khi chạy thử)"
+        type: boolean
+        default: true
+      max_videos:
+        description: "Số video tối đa mỗi đường ống"
+        type: string
+        default: "1"
+      privacy:
+        description: "Ép chế độ riêng tư (bỏ qua cột Privacy). Chạy thử nên để private"
+        type: choice
+        options: [private, unlisted, public, theo-CONFIG]
+        default: private
+
+# Không cho 2 lần chạy đè nhau (tránh đăng trùng video)
+concurrency:
+  group: dang-youtube
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Cài thư viện
+        run: pip install -r requirements.txt
+
+      - name: Chạy
+        env:
+          SHEET_ID: ${{ secrets.SHEET_ID }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          # đưa input qua biến môi trường (không nhúng thẳng vào lệnh) để tránh chèn mã độc
+          IN_MODE: ${{ inputs.mode }}
+          IN_PIPELINES: ${{ inputs.pipelines }}
+          IN_FORCE: ${{ inputs.force }}
+          IN_MAX: ${{ inputs.max_videos }}
+          IN_PRIVACY: ${{ inputs.privacy }}
+        run: |
+          set -eu
+          MODE="${IN_MODE:-run}"          # chạy theo lịch: không có input -> mặc định run
+          ARGS=""
+          PIPES="$(printf '%s' "${IN_PIPELINES:-}" | tr -d ' ')"
+          case "$PIPES" in *[!A-Za-z0-9_,]*) echo "Pipelines chỉ được chứa chữ, số, _ và dấu phẩy"; exit 1;; esac
+          if [ -n "$PIPES" ]; then ARGS="$ARGS --pipelines $PIPES"; fi
+          if [ "$MODE" = "doctor" ]; then
+            python -m poster doctor $ARGS
+            exit 0
+          fi
+          if [ "${IN_FORCE:-false}" = "true" ]; then ARGS="$ARGS --force"; fi
+          if [ -n "${IN_MAX:-}" ]; then ARGS="$ARGS --max-videos $IN_MAX"; fi
+          case "${IN_PRIVACY:-}" in private|unlisted|public) ARGS="$ARGS --privacy $IN_PRIVACY";; esac
+          if [ "$MODE" = "dry-run" ]; then ARGS="$ARGS --dry-run"; fi
+          python -m poster run $ARGS
