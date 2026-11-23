@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+# KHÔNG BAO GIỜ đưa khóa bí mật vào repo
+*.json
+!.github/**
+service-account*.json
+.env
